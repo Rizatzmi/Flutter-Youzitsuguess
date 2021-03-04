@@ -1,15 +1,14 @@
-import 'package:flutter/material.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:flutter/material.dart';
 
-class Questions extends StatefulWidget {
-  Questions({Key key}) : super(key: key);
+// class Question extends StatelessWidget {
+//   @override
+//   Widget build(BuildContext context) {
+//     CollectionReference question =
+//         FirebaseFirestore.instance.collection('Question');
 
-  @override
-  _QuestionsState createState() => _QuestionsState();
-}
+//     static Future<StreamBuilder> getimage () {
 
-class _QuestionsState extends State<Questions> {
-  @override
-  Widget build(BuildContext context) {
-    return Container();
-  }
-}
+//     }
+//   }
+// }

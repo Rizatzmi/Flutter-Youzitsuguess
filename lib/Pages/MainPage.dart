@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-// import 'package:get/get.dart';
 
 class MainPage extends StatelessWidget {
   const MainPage({Key key}) : super(key: key);
@@ -28,7 +27,9 @@ class MainPage extends StatelessWidget {
                   children: [
                     FlatButton(
                       minWidth: 150,
-                      onPressed: null,
+                      onPressed: () {
+                        Navigator.pushNamed(context, 'Question');
+                      },
                       child: Text(
                         'MULAI',
                         style: TextStyle(
@@ -43,7 +44,7 @@ class MainPage extends StatelessWidget {
                     ),
                     FlatButton(
                       minWidth: 150,
-                      onPressed: null,
+                      onPressed: () {},
                       child: Text(
                         'KIRIM SOAL',
                         style: TextStyle(
@@ -60,7 +61,9 @@ class MainPage extends StatelessWidget {
                   children: [
                     FlatButton(
                       minWidth: 150,
-                      onPressed: null,
+                      onPressed: () {
+                        Navigator.pushNamed(context, 'CaraMain');
+                      },
                       child: Text(
                         'CARA MAIN',
                         style: TextStyle(
@@ -75,7 +78,9 @@ class MainPage extends StatelessWidget {
                     ),
                     FlatButton(
                       minWidth: 150,
-                      onPressed: null,
+                      onPressed: () {
+                        Navigator.pushNamed(context, 'Tentang');
+                      },
                       child: Text(
                         'TENTANG',
                         style: TextStyle(

@@ -1,18 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:youzitsuguess/Pages/CaraMainPage.dart';
 import 'package:youzitsuguess/Pages/MainPage.dart';
+import 'package:youzitsuguess/Pages/QuestionPage.dart';
+import 'package:youzitsuguess/Pages/TentangPage.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
+    return MaterialApp(
+      home: MainPage(),
+      routes: {
+        'Home': (context) => MainPage(),
+        'CaraMain': (context) => CaraMainPage(),
+        'Question': (context) => QuestionPage(),
+        'Tentang': (context) => TentangPage()
+      },
       title: 'Youzitsu Guess',
       debugShowCheckedModeBanner: true,
-      home: MainPage(),
     );
   }
 }
