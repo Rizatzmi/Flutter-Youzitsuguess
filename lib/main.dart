@@ -17,13 +17,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       home: MainPage(),
       routes: {
-        'Home': (context) => MainPage(),
         'CaraMain': (context) => CaraMainPage(),
         'Question': (context) => QuestionPage(),
         'Tentang': (context) => TentangPage()
       },
       title: 'Youzitsu Guess',
-      debugShowCheckedModeBanner: true,
+      debugShowCheckedModeBanner: false,
     );
   }
 }
