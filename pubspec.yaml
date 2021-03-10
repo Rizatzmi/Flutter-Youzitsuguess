@@ -23,10 +23,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cloud_firestore: ^0.16.0+1
+  cloud_firestore: ^1.0.1
   cupertino_icons: ^1.0.0
-  firebase_core: ^0.7.0
-  provider: ^4.3.3
+  firebase_core: ^1.0.1
+  provider: ^5.0.0
 
 dev_dependencies:
   flutter_test:
