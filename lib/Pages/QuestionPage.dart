@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:youzitsuguess/Model/Questions.dart';
+
+int level = 1;
 
 class QuestionPage extends StatelessWidget {
   @override
@@ -17,7 +18,6 @@ class QuestionPage extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             StreamBuilder<DocumentSnapshot>(
                 stream: question.doc(level.toString()).snapshots(),
@@ -33,19 +33,19 @@ class QuestionPage extends StatelessWidget {
                   }
                 }),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Container(
-                  child: TextFormField(
+                SizedBox(
+                  child: TextField(
                     controller: txtanswer,
-                    cursorColor: Colors.amber,
+                    cursorColor: Colors.black,
                     decoration: InputDecoration(
                         filled: true,
                         fillColor: Colors.black12,
                         hintText: "KETIK JAWABAN DISINI"),
                   ),
-                  width: MediaQuery.of(context).size.width * 0.8,
-                ), 
+                  width: MediaQuery.of(context).size.width * 0.7,
+                ),
                 TextButton(
                     onPressed: () {
                       question
@@ -53,7 +53,7 @@ class QuestionPage extends StatelessWidget {
                           .get()
                           .then((DocumentSnapshot document) {
                         if (document.data()['Answer'] == txtanswer.text) {
-                          return print(level++ < document.data().length);
+                          return level++ < document.data().length;
                         }
                       });
                     },
