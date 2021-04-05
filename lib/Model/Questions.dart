@@ -19,7 +19,7 @@ class Questions extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
         }
-        final list = snapshot.data.docs;
+        final list = snapshot.data?.docs;
 
         return new ListView(
           children: list.map((DocumentSnapshot document) {

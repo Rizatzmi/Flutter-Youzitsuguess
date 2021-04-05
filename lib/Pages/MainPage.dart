@@ -1,4 +1,6 @@
 import 'package:assets_audio_player/assets_audio_player.dart';
+import 'package:audioplayers/audio_cache.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 
 class MainPage extends StatefulWidget {
@@ -7,6 +9,9 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
+  final assetsAudioPlayer = AssetsAudioPlayer();
+  final audioCache = AudioCache();
+  final audioplayer = AudioPlayer();
   // AudioPlayer audioPlayer;
 
   // void pauseSound() async {
@@ -62,12 +67,9 @@ class _MainPageState extends State<MainPage> {
                           backgroundColor: MaterialStateProperty.all(Colors.grey[900]),
                           shape: MaterialStateProperty.all(RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8)))),
-                      onPressed: () {
+                      onPressed: () async {
                         Navigator.pushNamed(context, 'Question');
                         // onload();
-                        AssetsAudioPlayer.newPlayer().open(
-                          Audio("assets\bensound-cute.mp3"),
-                        );
                       },
                       child: Text(
                         'MULAI',
@@ -104,6 +106,10 @@ class _MainPageState extends State<MainPage> {
                               borderRadius: BorderRadius.circular(8)))),
                       onPressed: () {
                         Navigator.pushNamed(context, 'CaraMain');
+                        // var bytes = await (await audioCache.load('bensound-cute .mp3'))
+                        //     .readAsBytes();
+                        // audioCache.playBytes(bytes);
+                        audioplayer.play('bensound-cute.mp3');
                       },
                       child: Text(
                         'CARA MAIN',

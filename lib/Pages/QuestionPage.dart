@@ -180,9 +180,11 @@ class _QuestionPageState extends State<QuestionPage> {
           txtanswer.clear();
           saveData();
           setState(() {
+            level++;
             isCorrect = true;
           });
-          return level++;
+
+          return null;
         }
         if (document.data()['Answer'] != txtanswer.text) {
           txtanswer.clear();
