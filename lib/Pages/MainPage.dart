@@ -1,7 +1,7 @@
-import 'package:assets_audio_player/assets_audio_player.dart';
-import 'package:audioplayers/audio_cache.dart';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:toggle_switch/toggle_switch.dart';
+import 'package:youzitsuguess/Model/AudioService.dart';
+import 'package:youzitsuguess/Model/SFX.dart';
 
 class MainPage extends StatefulWidget {
   @override
@@ -9,139 +9,146 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  final assetsAudioPlayer = AssetsAudioPlayer();
-  final audioCache = AudioCache();
-  final audioplayer = AudioPlayer();
-  // AudioPlayer audioPlayer;
-
-  // void pauseSound() async {
-  //   await audioPlayer.pause();
-  // }
-
-  // void resumeSound() async {
-  //   await audioPlayer.resume();
-  // }
-  //
-
+  int initialIndex = 0;
+  bool isTutorial = false;
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: () async => showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-                  title: Text('Apakah anda yakin ingin keluar?'),
-                  actions: <Widget>[
-                    TextButton(
-                        child: Text('Ya'),
-                        onPressed: () => Navigator.of(context).pop(true)),
-                    TextButton(
-                        child: Text('Tidak'),
-                        onPressed: () => Navigator.of(context).pop(false)),
-                  ])),
+      onWillPop: messageBox,
       child: Scaffold(
         body: Stack(
-          alignment: Alignment.center,
+          // alignment: Alignment.center,
           children: [
             Image.asset(
-              "assets/background.png",
-              fit: BoxFit.cover,
-              height: double.infinity,
-              width: double.infinity,
+              "assets/images/Backgrounds.png",
+              fit: BoxFit.fill,
+              height: MediaQuery.of(context).size.height,
+              width: MediaQuery.of(context).size.width,
             ),
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset(
-                  "assets/Logo.png",
-                  height: MediaQuery.of(context).size.height * 0.4,
-                ),
+                // Image.asset(
+                //   "assets/Logo.png",
+                //   height: MediaQuery.of(context).size.height * 0.4,
+                // ),
                 SizedBox(
                   height: 10,
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    TextButton(
-                      style: ButtonStyle(
-                          minimumSize: MaterialStateProperty.all(Size(150, 10)),
-                          backgroundColor: MaterialStateProperty.all(Colors.grey[900]),
-                          shape: MaterialStateProperty.all(RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)))),
-                      onPressed: () async {
-                        Navigator.pushNamed(context, 'Question');
-                        // onload();
-                      },
-                      child: Text(
-                        'MULAI',
-                        style:
-                            TextStyle(color: Colors.white, fontStyle: FontStyle.italic),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Column(
+                    children: [
+                      buildButton(
+                        'assets\images\buttons\Main.png',
+                        () async {
+                          AudioService.sfx.click(isPlaySfx);
+                          Navigator.pushNamed(context, 'Question');
+                        },
                       ),
-                    ),
-                    SizedBox(
-                      width: 10,
-                    ),
-                    TextButton(
-                      style: ButtonStyle(
-                          minimumSize: MaterialStateProperty.all(Size(150, 10)),
-                          backgroundColor: MaterialStateProperty.all(Colors.grey[900]),
-                          shape: MaterialStateProperty.all(RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)))),
-                      onPressed: () {},
-                      child: Text(
-                        'KIRIM SOAL',
-                        style:
-                            TextStyle(color: Colors.white, fontStyle: FontStyle.italic),
-                      ),
-                    )
-                  ],
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    TextButton(
-                      style: ButtonStyle(
-                          minimumSize: MaterialStateProperty.all(Size(150, 10)),
-                          backgroundColor: MaterialStateProperty.all(Colors.grey[900]),
-                          shape: MaterialStateProperty.all(RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)))),
-                      onPressed: () {
-                        Navigator.pushNamed(context, 'CaraMain');
-                        // var bytes = await (await audioCache.load('bensound-cute .mp3'))
-                        //     .readAsBytes();
-                        // audioCache.playBytes(bytes);
-                        audioplayer.play('bensound-cute.mp3');
-                      },
-                      child: Text(
-                        'CARA MAIN',
-                        style:
-                            TextStyle(color: Colors.white, fontStyle: FontStyle.italic),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 10,
-                    ),
-                    TextButton(
-                      style: ButtonStyle(
-                          minimumSize: MaterialStateProperty.all(Size(150, 10)),
-                          backgroundColor: MaterialStateProperty.all(Colors.grey[900]),
-                          shape: MaterialStateProperty.all(RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)))),
-                      onPressed: () {
-                        Navigator.pushNamed(context, 'Tentang');
-                      },
-                      child: Text(
-                        'TENTANG',
-                        style:
-                            TextStyle(color: Colors.white, fontStyle: FontStyle.italic),
-                      ),
-                    )
-                  ],
+                      buildButton('assets\images\buttons\Pengaturan.png', () {}),
+                      buildButton('assets\images\buttons\Credit.png', () {})
+                    ],
+                  ),
                 )
               ],
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Future<bool> messageBox() async => showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Apakah anda yakin ingin keluar?'),
+          actions: <Widget>[
+            TextButton(
+                child: Text('Ya'),
+                onPressed: () {
+                  AudioService.sfx.click(isPlaySfx);
+                  Navigator.of(context).pop(true);
+                }),
+            TextButton(
+                child: Text('Tidak'),
+                onPressed: () {
+                  AudioService.sfx.click(isPlaySfx);
+                  Navigator.of(context).pop(false);
+                }),
+          ],
+        ),
+      );
+
+  Widget buildButton(String image, Function callback) {
+    return InkWell(
+      onTap: callback,
+      splashColor: Colors.grey.withOpacity(0.5),
+      child: Ink(
+        height: 100,
+        width: 100,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(image),
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void openPengaturan(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.orange.shade700,
+          content: Column(
+            children: [
+              Row(
+                children: [
+                  Text('Sound'),
+                  SizedBox(
+                    width: 10,
+                  ),
+                  ToggleSwitch(
+                    minWidth: 90.0,
+                    fontSize: 16.0,
+                    initialLabelIndex: initialIndex,
+                    activeBgColor: Colors.red,
+                    activeFgColor: Colors.white,
+                    inactiveBgColor: Colors.black,
+                    inactiveFgColor: Colors.white,
+                    labels: ['On', 'Off'],
+                    onToggle: (index) {
+                      setState(() {
+                        initialIndex = index;
+                      });
+                      if (initialIndex == 0) {
+                        setState(() {
+                          isPlaySfx = true;
+                        });
+                      } else {
+                        setState(() {
+                          isPlaySfx = false;
+                        });
+                      }
+                    },
+                  )
+                ],
+              ),
+              buildButton(
+                'assets\images\buttons\Tentang.png',
+                () async {
+                  AudioService.sfx.click(isPlaySfx);
+                  Navigator.pushNamed(context, 'Tentang');
+                },
+              )
+            ],
+          ),
+        );
+      },
     );
   }
 }
