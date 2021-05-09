@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:youzitsuguess/Model/Ads_Service.dart';
 import 'package:youzitsuguess/Model/AudioService.dart';
+import 'package:youzitsuguess/Model/Button.dart';
 import 'package:youzitsuguess/Model/SFX.dart';
 
 class QuestionPage extends StatefulWidget {
@@ -11,6 +14,10 @@ class QuestionPage extends StatefulWidget {
 }
 
 class _QuestionPageState extends State<QuestionPage> {
+  InterstitialAd _interstitialAd;
+  bool _isInterstitialAdReady = false;
+  BannerAd _bannerAd;
+  bool _isBannerAdReady = false;
   FirebaseFirestore firestore = FirebaseFirestore.instance;
   TextEditingController txtanswer = TextEditingController();
   double opacity;
@@ -27,10 +34,45 @@ class _QuestionPageState extends State<QuestionPage> {
   @override
   void initState() {
     super.initState();
+    _bannerAd = BannerAd(
+      adUnitId: AdsHelper.bannerAdUnitId,
+      request: AdRequest(),
+      size: AdSize.banner,
+      listener: AdListener(
+        onAdLoaded: (_) {
+          setState(() {
+            _isBannerAdReady = true;
+          });
+        },
+        onAdFailedToLoad: (ad, err) {
+          print('Failed to load a banner ad: ${err.message}');
+          _isBannerAdReady = false;
+          ad.dispose();
+        },
+      ),
+    );
+
+    _bannerAd.load();
+
+    _interstitialAd = InterstitialAd(
+      adUnitId: AdsHelper.interstitialAdUnitId,
+      request: AdRequest(),
+      listener: AdListener(
+        onAdLoaded: (_) {
+          _isInterstitialAdReady = true;
+        },
+        onAdFailedToLoad: (ad, err) {
+          print('Failed to load an interstitial ad: ${err.message}');
+          _isInterstitialAdReady = false;
+          ad.dispose();
+        },
+      ),
+    )..load();
+
     SharedPreferences.getInstance().then((value) => value.clear());
     SharedPreferences.getInstance().then((value) {
       setState(() {
-        level = value.getInt('Level') ?? 10;
+        level = value.getInt('Level') ?? 1;
         lifeCount = value.getInt('Life') ?? 5;
       });
     });
@@ -103,15 +145,31 @@ class _QuestionPageState extends State<QuestionPage> {
     if (lifeCount > 0) lifeCount--;
   }
 
+  onAdsLevel() {
+    if (level % 5 == 0 && _isInterstitialAdReady) {
+      _interstitialAd.show();
+    }
+  }
+
+  @override
+  void dispose() {
+    _bannerAd.dispose();
+    _interstitialAd.show();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     CollectionReference question = firestore.collection('Question');
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      // appBar: AppBar(
-      //     // Untuk Menghilangkan Tanda Panah Back
-      //     automaticallyImplyLeading: false,
-      //     title: buildHP()),
+      appBar: AppBar(
+        // Untuk Menghilangkan Tanda Panah Back
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.red.shade600,
+        title: Text('Level ' + level.toString()),
+        flexibleSpace: buildHP(),
+      ),
       body: Container(
         height: MediaQuery.of(context).size.height,
         width: MediaQuery.of(context).size.width,
@@ -119,26 +177,13 @@ class _QuestionPageState extends State<QuestionPage> {
             // alignment: Alignment.center,
             children: [
               Image.asset(
-                'assets/images/Background.png',
+                "assets/images/Background.png",
                 fit: BoxFit.fill,
                 height: MediaQuery.of(context).size.height,
                 width: MediaQuery.of(context).size.width,
               ),
               Column(
                 children: [
-                  Align(
-                    alignment: Alignment.topCenter,
-                    child: Container(
-                        color: Colors.red.shade900.withOpacity(0.2),
-                        width: MediaQuery.of(context).size.width,
-                        height: MediaQuery.of(context).size.height * 0.1,
-                        child: Row(
-                          children: [
-                            Text('Level ' + level.toString()),
-                            buildHP(),
-                          ],
-                        )),
-                  ),
                   StreamBuilder<QuerySnapshot>(
                       stream: question.where('No', isEqualTo: level).snapshots(),
                       builder:
@@ -159,7 +204,13 @@ class _QuestionPageState extends State<QuestionPage> {
                           return CircularProgressIndicator();
                         }
                       }),
-                  buildBotNavBar()
+                  if (_isBannerAdReady)
+                    Container(
+                      width: _bannerAd.size.width.toDouble(),
+                      height: _bannerAd.size.height.toDouble(),
+                      child: AdWidget(ad: _bannerAd),
+                    ),
+                  buildBotNavBar(),
                 ],
               ),
               buildPopUp()
@@ -179,7 +230,7 @@ class _QuestionPageState extends State<QuestionPage> {
           children: [
             Visibility(
               visible: isCorrect,
-              child: Image.asset('assets\images\popup\Benar.png'),
+              child: Image.asset("assets/images/popups/Benar.png"),
             ),
           ],
         ),
@@ -192,7 +243,7 @@ class _QuestionPageState extends State<QuestionPage> {
       return Visibility(
         visible: isWrong,
         child: Center(
-          child: Image.asset('assets\images\popup\Salah.png'),
+          child: Image.asset("assets/images/popups/Salah.png"),
         ),
       );
     }
@@ -202,46 +253,36 @@ class _QuestionPageState extends State<QuestionPage> {
       AudioService.sfx.wrong(isPlaySfx);
       return Visibility(
         visible: isGameOver,
-        // child: AlertDialog(
-        //   title: Text('GAME OVER'),
-        //   actions: <Widget>[
-        //     TextButton(
-        //         child: Text('MULAI LAGI'),
-        //         onPressed: () {
-        //           AudioService.sfx.click(isPlaySfx);
-        //           Navigator.of(context).pushReplacementNamed('Question');
-        //           SharedPreferences.getInstance().then((value) => value.clear());
-        //         }),
-        //     TextButton(
-        //         child: Text('KELUAR'),
-        //         onPressed: () {
-        //           AudioService.sfx.click(isPlaySfx);
-        //           Navigator.of(context).pushNamed('Home');
-        //         }),
-        //   ],
-        // ),
-        child: Center(
-          child: Stack(
-            children: [
-              Image.asset('assets\images\popup\Quit.png'),
-              Column(
-                children: [
-                  buildButton('assets\images\buttons\Restart.png', () {
-                    AudioService.sfx.click(isPlaySfx);
-                    Navigator.of(context).pushReplacementNamed('Question');
-                    SharedPreferences.getInstance().then((value) => value.clear());
-                  }),
-                  SizedBox(
-                    height: 10,
-                  ),
-                  buildButton('assets\images\buttons\Quit.png', () {
+        child: AlertDialog(
+          title: Text('GAMEOVER'),
+          actions: <Widget>[
+            GameButton(
+                widht: 200,
+                height: 100,
+                hover: Colors.red.withOpacity(0.7),
+                image: "assets/images/buttons/Restart.png",
+                onPress: () {
+                  _interstitialAd.load();
+                  AudioService.sfx.click(isPlaySfx);
+                  Navigator.of(context).pushReplacementNamed('Question');
+                  SharedPreferences.getInstance().then((value) => value.clear());
+                }),
+            GameButton(
+                widht: 200,
+                height: 100,
+                hover: Colors.red.withOpacity(0.7),
+                image: "assets/images/buttons/Quit.png",
+                onPress: () {
+                  if (_isInterstitialAdReady) {
+                    _interstitialAd.show();
                     AudioService.sfx.click(isPlaySfx);
                     Navigator.of(context).pushNamed('Home');
-                  })
-                ],
-              )
-            ],
-          ),
+                  } else {
+                    AudioService.sfx.click(isPlaySfx);
+                    Navigator.of(context).pushNamed('Home');
+                  }
+                }),
+          ],
         ),
       );
     }
@@ -251,28 +292,42 @@ class _QuestionPageState extends State<QuestionPage> {
       AudioService.sfx.correct(isPlaySfx);
       return Visibility(
         visible: isWinning,
-        child: Center(
-          child: Stack(
-            children: [
-              Image.asset('assets\images\popup\Victory.png'),
-              Column(
-                children: [
-                  buildButton('assets\images\buttons\Restart.png', () {
+        child: AlertDialog(
+          title: Text('VICTORY'),
+          actions: <Widget>[
+            GameButton(
+                widht: 200,
+                height: 100,
+                hover: Colors.red.withOpacity(0.7),
+                image: "assets/images/buttons/Restart.png",
+                onPress: () {
+                  if (_isInterstitialAdReady) {
+                    _interstitialAd.show();
                     AudioService.sfx.click(isPlaySfx);
                     Navigator.of(context).pushReplacementNamed('Question');
                     SharedPreferences.getInstance().then((value) => value.clear());
-                  }),
-                  SizedBox(
-                    height: 10,
-                  ),
-                  buildButton('assets\images\buttons\Quit.png', () {
+                  } else {
+                    AudioService.sfx.click(isPlaySfx);
+                    Navigator.of(context).pushReplacementNamed('Question');
+                    SharedPreferences.getInstance().then((value) => value.clear());
+                  }
+                }),
+            GameButton(
+                widht: 200,
+                height: 100,
+                hover: Colors.red.withOpacity(0.7),
+                image: "assets/images/buttons/Quit.png",
+                onPress: () {
+                  if (_isInterstitialAdReady) {
+                    _interstitialAd.show();
                     AudioService.sfx.click(isPlaySfx);
                     Navigator.of(context).pushNamed('Home');
-                  })
-                ],
-              )
-            ],
-          ),
+                  } else {
+                    AudioService.sfx.click(isPlaySfx);
+                    Navigator.of(context).pushNamed('Home');
+                  }
+                }),
+          ],
         ),
       );
     }
@@ -291,18 +346,36 @@ class _QuestionPageState extends State<QuestionPage> {
   }
 
   // Method OnPressed Button Jawab
-  onPress() {
+  onPress() async {
     firestore
         .collection('Question')
         .where('No', isEqualTo: level)
         .get()
         .then((QuerySnapshot querySnapshot) {
       querySnapshot.docs.forEach((DocumentSnapshot document) {
+        // Ketika jawaban kosong
         if (txtanswer.text == "") {
           if (lifeCount <= 0) {
             isGameOver = true;
           } else {
-            isEmptyAnswer = true;
+            AudioService.sfx.wrong(isPlaySfx);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: Colors.white,
+                elevation: 4,
+                content: Center(
+                  child: Text(
+                    'Jawaban Masih Kosong',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w400,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+            );
           }
           return null;
         }
@@ -310,6 +383,7 @@ class _QuestionPageState extends State<QuestionPage> {
         // Ketika Jawaban Betul dan Masih belum level maks
         if (document.data()['Answer'] == txtanswer.text && level <= maxlevel) {
           txtanswer.clear();
+          onAdsLevel();
           saveData();
           setState(() {
             if (level <= maxlevel) {
@@ -405,35 +479,17 @@ class _QuestionPageState extends State<QuestionPage> {
           ),
           width: MediaQuery.of(context).size.width * 0.7,
         ),
-        TextButton(
-            onPressed: () {
-              onPress();
-              setState(() {});
-            },
-            style: ButtonStyle(backgroundColor: MaterialStateProperty.all(Colors.blue)),
-            child: Text(
-              'JAWAB',
-              style: TextStyle(color: Colors.white),
-            ))
+        GameButton(
+          onPress: () {
+            onPress();
+            setState(() {});
+          },
+          widht: MediaQuery.of(context).size.width * 0.1,
+          height: 60,
+          hover: Colors.red.withOpacity(0.7),
+          image: "assets/images/buttons/Jawab.png",
+        )
       ],
-    );
-  }
-
-  // Untuk membuat button
-  Widget buildButton(String image, Function callback) {
-    return InkWell(
-      onTap: callback,
-      splashColor: Colors.grey.withOpacity(0.5),
-      child: Ink(
-        height: 100,
-        width: 100,
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage(image),
-            fit: BoxFit.cover,
-          ),
-        ),
-      ),
     );
   }
 }
