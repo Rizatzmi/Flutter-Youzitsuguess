@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:youzitsuguess/Model/Ads_Service.dart';
@@ -14,16 +15,15 @@ class QuestionPage extends StatefulWidget {
 }
 
 class _QuestionPageState extends State<QuestionPage> {
-  InterstitialAd _interstitialAd;
-  bool _isInterstitialAdReady = false;
-  BannerAd _bannerAd;
-  bool _isBannerAdReady = false;
   FirebaseFirestore firestore = FirebaseFirestore.instance;
   TextEditingController txtanswer = TextEditingController();
-  double opacity;
+
+  BannerAd _bannerAd;
   int level = 1;
   int maxlevel = 10;
   int lifeCount = 5;
+  int levelAppbar;
+  bool _isBannerAdReady = false;
   bool isGameOver = false;
   bool isCorrect = false;
   bool isWrong = false;
@@ -54,31 +54,17 @@ class _QuestionPageState extends State<QuestionPage> {
 
     _bannerAd.load();
 
-    _interstitialAd = InterstitialAd(
-      adUnitId: AdsHelper.interstitialAdUnitId,
-      request: AdRequest(),
-      listener: AdListener(
-        onAdLoaded: (_) {
-          _isInterstitialAdReady = true;
-        },
-        onAdFailedToLoad: (ad, err) {
-          print('Failed to load an interstitial ad: ${err.message}');
-          _isInterstitialAdReady = false;
-          ad.dispose();
-        },
-      ),
-    )..load();
-
     SharedPreferences.getInstance().then((value) => value.clear());
     SharedPreferences.getInstance().then((value) {
       setState(() {
-        level = value.getInt('Level') ?? 1;
+        level = value.getInt('Level') ?? 10;
         lifeCount = value.getInt('Life') ?? 5;
       });
     });
     changeCorrect();
     changeWrong();
     changeEmpty();
+    leveltitle();
   }
 
   // Method Save Data Variabel Level dan jumlah Nyawa yang tersisa
@@ -145,16 +131,17 @@ class _QuestionPageState extends State<QuestionPage> {
     if (lifeCount > 0) lifeCount--;
   }
 
-  onAdsLevel() {
-    if (level % 5 == 0 && _isInterstitialAdReady) {
-      _interstitialAd.show();
+  leveltitle() {
+    if (level <= 11) {
+      levelAppbar = 10;
+    } else {
+      levelAppbar = level;
     }
   }
 
   @override
   void dispose() {
     _bannerAd.dispose();
-    _interstitialAd.show();
     super.dispose();
   }
 
@@ -167,8 +154,12 @@ class _QuestionPageState extends State<QuestionPage> {
         // Untuk Menghilangkan Tanda Panah Back
         automaticallyImplyLeading: false,
         backgroundColor: Colors.red.shade600,
-        title: Text('Level ' + level.toString()),
-        flexibleSpace: buildHP(),
+        title: Text(
+          'Level ' + levelAppbar.toString(),
+        ),
+        actions: [
+          buildHP(),
+        ],
       ),
       body: Container(
         height: MediaQuery.of(context).size.height,
@@ -191,11 +182,14 @@ class _QuestionPageState extends State<QuestionPage> {
                         if (snapshot.hasData) {
                           return Column(
                             children: snapshot.data.docs.map((DocumentSnapshot document) {
-                              return Container(
-                                height: MediaQuery.of(context).size.height * 0.5,
-                                width: MediaQuery.of(context).size.width * 0.8,
-                                child: Image(
-                                  image: NetworkImage(document.data()['Image']),
+                              return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Container(
+                                  height: MediaQuery.of(context).size.height * 0.4,
+                                  width: MediaQuery.of(context).size.width * 0.8,
+                                  child: Image(
+                                    image: NetworkImage(document.data()['Image']),
+                                  ),
                                 ),
                               );
                             }).toList(),
@@ -204,13 +198,13 @@ class _QuestionPageState extends State<QuestionPage> {
                           return CircularProgressIndicator();
                         }
                       }),
+                  if (level < 11) buildBotNavBar(),
                   if (_isBannerAdReady)
                     Container(
                       width: _bannerAd.size.width.toDouble(),
                       height: _bannerAd.size.height.toDouble(),
                       child: AdWidget(ad: _bannerAd),
                     ),
-                  buildBotNavBar(),
                 ],
               ),
               buildPopUp()
@@ -250,38 +244,43 @@ class _QuestionPageState extends State<QuestionPage> {
 
     // Widget yang muncul ketika Game Over
     if (isGameOver == true) {
-      AudioService.sfx.wrong(isPlaySfx);
       return Visibility(
         visible: isGameOver,
-        child: AlertDialog(
-          title: Text('GAMEOVER'),
-          actions: <Widget>[
-            GameButton(
-                widht: 200,
-                height: 100,
-                hover: Colors.red.withOpacity(0.7),
-                image: "assets/images/buttons/Restart.png",
-                onPress: () {
-                  _interstitialAd.load();
-                  AudioService.sfx.click(isPlaySfx);
-                  Navigator.of(context).pushReplacementNamed('Question');
-                  SharedPreferences.getInstance().then((value) => value.clear());
-                }),
-            GameButton(
-                widht: 200,
-                height: 100,
-                hover: Colors.red.withOpacity(0.7),
-                image: "assets/images/buttons/Quit.png",
-                onPress: () {
-                  if (_isInterstitialAdReady) {
-                    _interstitialAd.show();
-                    AudioService.sfx.click(isPlaySfx);
-                    Navigator.of(context).pushNamed('Home');
-                  } else {
-                    AudioService.sfx.click(isPlaySfx);
-                    Navigator.of(context).pushNamed('Home');
-                  }
-                }),
+        child: Stack(
+          children: [
+            Center(
+                child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Image.asset("assets/images/Gameover.png"),
+            )),
+            Positioned(
+              bottom: 200,
+              left: 110,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  GameButton(
+                      widht: 150,
+                      height: 75,
+                      hover: Colors.red.withOpacity(0.7),
+                      image: "assets/images/buttons/Restart.png",
+                      onPress: () {
+                        AudioService.sfx.click(isPlaySfx);
+                        Navigator.of(context).pushReplacementNamed('Question');
+                        SharedPreferences.getInstance().then((value) => value.clear());
+                      }),
+                  GameButton(
+                      widht: 150,
+                      height: 75,
+                      hover: Colors.red.withOpacity(0.7),
+                      image: "assets/images/buttons/Quit.png",
+                      onPress: () {
+                        AudioService.sfx.click(isPlaySfx);
+                        Navigator.of(context).pushNamed('Home');
+                      }),
+                ],
+              ),
+            )
           ],
         ),
       );
@@ -289,59 +288,48 @@ class _QuestionPageState extends State<QuestionPage> {
 
     // Widget untuk menampilkan tampilan ketika berhasil menang
     if (isWinning == true) {
-      AudioService.sfx.correct(isPlaySfx);
       return Visibility(
         visible: isWinning,
-        child: AlertDialog(
-          title: Text('VICTORY'),
-          actions: <Widget>[
-            GameButton(
-                widht: 200,
-                height: 100,
-                hover: Colors.red.withOpacity(0.7),
-                image: "assets/images/buttons/Restart.png",
-                onPress: () {
-                  if (_isInterstitialAdReady) {
-                    _interstitialAd.show();
-                    AudioService.sfx.click(isPlaySfx);
-                    Navigator.of(context).pushReplacementNamed('Question');
-                    SharedPreferences.getInstance().then((value) => value.clear());
-                  } else {
-                    AudioService.sfx.click(isPlaySfx);
-                    Navigator.of(context).pushReplacementNamed('Question');
-                    SharedPreferences.getInstance().then((value) => value.clear());
-                  }
-                }),
-            GameButton(
-                widht: 200,
-                height: 100,
-                hover: Colors.red.withOpacity(0.7),
-                image: "assets/images/buttons/Quit.png",
-                onPress: () {
-                  if (_isInterstitialAdReady) {
-                    _interstitialAd.show();
-                    AudioService.sfx.click(isPlaySfx);
-                    Navigator.of(context).pushNamed('Home');
-                  } else {
-                    AudioService.sfx.click(isPlaySfx);
-                    Navigator.of(context).pushNamed('Home');
-                  }
-                }),
+        child: Stack(
+          children: [
+            Center(
+                child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Image.asset("assets/images/Victory.png"),
+            )),
+            Positioned(
+              bottom: 200,
+              left: 110,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  GameButton(
+                      widht: 150,
+                      height: 75,
+                      hover: Colors.red.withOpacity(0.7),
+                      image: "assets/images/buttons/Restart.png",
+                      onPress: () {
+                        AudioService.sfx.click(isPlaySfx);
+                        Navigator.of(context).pushReplacementNamed('Question');
+                        SharedPreferences.getInstance().then((value) => value.clear());
+                      }),
+                  GameButton(
+                      widht: 150,
+                      height: 75,
+                      hover: Colors.red.withOpacity(0.7),
+                      image: "assets/images/buttons/Quit.png",
+                      onPress: () {
+                        AudioService.sfx.click(isPlaySfx);
+                        Navigator.of(context).pushNamed('Home');
+                      }),
+                ],
+              ),
+            )
           ],
         ),
       );
     }
 
-    // Widget untuk menampilkan tampilan ketika jawaban masih kosong
-    if (isEmptyAnswer == true) {
-      AudioService.sfx.wrong(isPlaySfx);
-      return Visibility(
-        visible: isEmptyAnswer,
-        child: Center(
-          child: Text('JAWABAN MASIH KOSONG'),
-        ),
-      );
-    }
     return Center();
   }
 
@@ -355,26 +343,17 @@ class _QuestionPageState extends State<QuestionPage> {
       querySnapshot.docs.forEach((DocumentSnapshot document) {
         // Ketika jawaban kosong
         if (txtanswer.text == "") {
-          if (lifeCount <= 0) {
+          if (lifeCount == 1) {
+            lifeCount--;
             isGameOver = true;
+            AudioService.sfx.wrong(isPlaySfx);
           } else {
             AudioService.sfx.wrong(isPlaySfx);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: Colors.white,
-                elevation: 4,
-                content: Center(
-                  child: Text(
-                    'Jawaban Masih Kosong',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w400,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ),
+            lifeCount--;
+            Fluttertoast.showToast(
+              msg: "Jawaban Masih Kosong",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.CENTER,
             );
           }
           return null;
@@ -383,7 +362,7 @@ class _QuestionPageState extends State<QuestionPage> {
         // Ketika Jawaban Betul dan Masih belum level maks
         if (document.data()['Answer'] == txtanswer.text && level <= maxlevel) {
           txtanswer.clear();
-          onAdsLevel();
+
           saveData();
           setState(() {
             if (level <= maxlevel) {
@@ -392,6 +371,7 @@ class _QuestionPageState extends State<QuestionPage> {
             }
             if (level > maxlevel) {
               isWinning = true;
+              AudioService.sfx.correct(isPlaySfx);
             }
           });
           return null;
@@ -407,6 +387,7 @@ class _QuestionPageState extends State<QuestionPage> {
             if (lifeCount <= 0) {
               isGameOver = true;
             } else {
+              lifeCount--;
               isWrong = true;
             }
           });
@@ -418,78 +399,69 @@ class _QuestionPageState extends State<QuestionPage> {
 
   // Widget untuk menampilkan bar nyawa kita
   Widget buildHP() {
-    return SizedBox(
-      width: MediaQuery.of(context).size.width / 1,
-      child: Row(
-        children: [
-          Stack(children: [
-            // HP yang tetap berjumlah lima
-            SizedBox(
-              height: 50,
-              width: 125,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: 5,
-                itemBuilder: (BuildContext context, int index) {
-                  return Icon(
-                    Icons.favorite,
-                    color: Colors.grey,
-                  );
-                },
-              ),
-            ),
-            // HP yang akan berkurang ketika jawaban salah
-            SizedBox(
-              height: 50,
-              width: 125,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: lifeCount,
-                itemBuilder: (BuildContext context, int index) {
-                  return Icon(
-                    Icons.favorite,
-                    color: Colors.pink,
-                  );
-                },
-              ),
-            ),
-          ]),
-        ],
-      ),
+    return Row(
+      children: [
+        SizedBox(
+          height: 50,
+          width: 125,
+          child: ListView.builder(
+            reverse: true,
+            scrollDirection: Axis.horizontal,
+            itemCount: lifeCount,
+            itemBuilder: (BuildContext context, int index) {
+              return Icon(
+                Icons.favorite,
+                color: Colors.white,
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
   Widget buildBotNavBar() {
-    return Row(
-      children: [
-        SizedBox(
-          child: TextFormField(
-            keyboardType: TextInputType.name,
-            textCapitalization: TextCapitalization.none,
-            controller: txtanswer,
-            cursorColor: Colors.black,
-            onChanged: (value) {
-              if (txtanswer.text != value.toUpperCase())
-                txtanswer.value = txtanswer.value.copyWith(text: value.toUpperCase());
-            },
-            decoration: InputDecoration(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          SizedBox(
+            width: MediaQuery.of(context).size.width * 0.7,
+            height: 40,
+            child: TextFormField(
+              keyboardType: TextInputType.name,
+              textCapitalization: TextCapitalization.none,
+              controller: txtanswer,
+              cursorColor: Colors.black,
+              onChanged: (value) {
+                if (txtanswer.text != value.toUpperCase())
+                  txtanswer.value = txtanswer.value.copyWith(
+                    text: value.toUpperCase(),
+                  );
+              },
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
                 filled: true,
-                fillColor: Colors.black12,
-                hintText: "KETIK JAWABAN DISINI"),
+                fillColor: Colors.white,
+                hintText: "KETIK JAWABAN DISINI",
+              ),
+            ),
           ),
-          width: MediaQuery.of(context).size.width * 0.7,
-        ),
-        GameButton(
-          onPress: () {
-            onPress();
-            setState(() {});
-          },
-          widht: MediaQuery.of(context).size.width * 0.1,
-          height: 60,
-          hover: Colors.red.withOpacity(0.7),
-          image: "assets/images/buttons/Jawab.png",
-        )
-      ],
+          GameButton(
+            onPress: () {
+              onPress();
+              setState(() {});
+            },
+            widht: 80,
+            height: 40,
+            hover: Colors.red.withOpacity(0.7),
+            image: "assets/images/buttons/Jawab.png",
+          )
+        ],
+      ),
     );
   }
 }
