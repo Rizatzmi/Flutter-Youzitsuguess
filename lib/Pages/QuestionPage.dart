@@ -17,7 +17,6 @@ class QuestionPage extends StatefulWidget {
 class _QuestionPageState extends State<QuestionPage> {
   FirebaseFirestore firestore = FirebaseFirestore.instance;
   TextEditingController txtanswer = TextEditingController();
-
   BannerAd _bannerAd;
   int level = 1;
   int maxlevel = 10;
@@ -57,7 +56,7 @@ class _QuestionPageState extends State<QuestionPage> {
     SharedPreferences.getInstance().then((value) => value.clear());
     SharedPreferences.getInstance().then((value) {
       setState(() {
-        level = value.getInt('Level') ?? 10;
+        level = value.getInt('Level') ?? 1;
         lifeCount = value.getInt('Life') ?? 5;
       });
     });
@@ -329,7 +328,6 @@ class _QuestionPageState extends State<QuestionPage> {
         ),
       );
     }
-
     return Center();
   }
 
@@ -349,7 +347,6 @@ class _QuestionPageState extends State<QuestionPage> {
             AudioService.sfx.wrong(isPlaySfx);
           } else {
             AudioService.sfx.wrong(isPlaySfx);
-            lifeCount--;
             Fluttertoast.showToast(
               msg: "Jawaban Masih Kosong",
               toastLength: Toast.LENGTH_SHORT,
@@ -362,7 +359,6 @@ class _QuestionPageState extends State<QuestionPage> {
         // Ketika Jawaban Betul dan Masih belum level maks
         if (document.data()['Answer'] == txtanswer.text && level <= maxlevel) {
           txtanswer.clear();
-
           saveData();
           setState(() {
             if (level <= maxlevel) {
